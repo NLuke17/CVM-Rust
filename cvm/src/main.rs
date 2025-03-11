@@ -6,9 +6,9 @@ use std::hash::Hash;
 use std::time::Instant;
 
 pub struct CVMHash<T> {
-    storage: usize,      // maximum capacity before we adapt
-    buffer: HashSet<T>,  // current set of stored elements
-    coinflips: u32,      // number of times we've increased the coinflip threshold
+    storage: usize,     // maximum capacity before we adapt
+    buffer: HashSet<T>, // current set of stored elements
+    coinflips: u32,     // number of times we've increased the coinflip threshold
 }
 
 impl<T: Eq + Hash + Clone> CVMHash<T> {
@@ -74,23 +74,34 @@ impl<T: Eq + Hash + Clone> CVMHash<T> {
     }
 }
 
+// ... (previous code remains the same)
+
 fn main() -> Result<(), Box<dyn Error>> {
-    // Read the file "data.txt" (each word separated by whitespace).
-    let text = fs::read_to_string("src\\output.txt")?;
-    let words = text.split_whitespace();
+    // Read and parse words into a Vec<String> once
+    let text = fs::read_to_string("src/ipAddress.txt")?;
+    let words: Vec<String> = text.split_whitespace().map(|s| s.to_string()).collect();
 
-    // Create a CVMHash estimator with a chosen storage capacity.
-    let mut estimator = CVMHash::new(500);
-
-    // Benchmark the processing of words.
+    // Create estimator and process words
+    let mut estimator = CVMHash::new(200);
     let start = Instant::now();
-    for word in words {
-        // Convert each &str into a String.
-        estimator.new_input(word.to_string());
+    for word in &words {
+        estimator.new_input(word.clone());
     }
     let duration = start.elapsed();
 
-    println!("Estimated distinct count: {}", estimator.get_estimate());
+    // Calculate actual distinct count
+    let actual_distinct = 2732;
+    let estimate = estimator.get_estimate();
+
+    // Calculate error metrics
+    let absolute_error = (estimate as i64 - actual_distinct as i64).abs();
+    let relative_error = (absolute_error as f64 / actual_distinct as f64) * 100.0;
+
+    // Print results
+    println!("Actual distinct count:  {}", actual_distinct);
+    println!("Estimated distinct count: {}", estimate);
+    println!("Absolute error:          {}", absolute_error);
+    println!("Relative error:          {:.2}%", relative_error);
     println!("Number of stored objects: {}", estimator.storage_objects());
     println!("Time elapsed: {:?}", duration);
 
